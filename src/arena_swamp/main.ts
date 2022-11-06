@@ -1,14 +1,13 @@
-import { ATTACK, CARRY, MOVE, RANGED_ATTACK, TOUGH, WORK } from "game/constants";
-import { Creep, RoomPosition, Source, StructureContainer, StructureSpawn } from "game/prototypes";
+import { Creep, StructureSpawn } from "game/prototypes";
 import { getObjectsByPrototype } from "game/utils";
-import { calcEnergyScore, calcPower, calcThreat } from "./calculation";
-import { processCreep } from "./creepLogic";
-import { Goal } from "./goal";
+import { calcPower, calcThreat, clearCache } from "./calculation";
+import { Goal } from "./goals/goal";
+import { CreepLogic } from "./logic/creepLogic";
+import { SpawnLogic } from "./logic/spawnLogic";
 
-export let energySources: (StructureContainer | Source)[] = [];
-let spawn: StructureSpawn | undefined;
 let firstLoop = true;
-let MAX_DIST = 44.7;
+let cLogic = new CreepLogic();
+let sLogic: SpawnLogic[] = [];
 
 declare module "game/prototypes" {
   interface Creep {
@@ -16,39 +15,46 @@ declare module "game/prototypes" {
   }
 }
 
+declare global {
+  namespace NodeJS {
+    interface Global {
+      power: number;
+      threat: number;
+      balance: number;
+      allCreeps: Creep[];
+      myCreeps: Creep[];
+      enemyCreeps: Creep[];
+    }
+  }
+}
+
 export function loop(): void {
   if (firstLoop)
     init();
-  let allCreeps = getObjectsByPrototype(Creep);
-  let myCreeps = allCreeps.filter(c => c.my);
-  let enemies = allCreeps.filter(c => !c.my);
 
-  let harvs = myCreeps.filter(c => c.body.some(b => b.type == WORK));
-  let attak = myCreeps.filter(c => c.body.some(b => b.type == ATTACK || b.type == RANGED_ATTACK));
+  updateGlobals();
+  clearCache();
 
-  let base = [MOVE];
-  let threat = calcThreat();
-  let power = calcPower();
+  cLogic.loop();
+  for (let spawn of sLogic)
+    spawn.loop();
 
-  console.log("Threat: " + threat + " Power: " + power);
-  let state = power - threat;
-
-  if (harvs <= attak) {
-    spawn?.spawnCreep(base.concat([WORK, CARRY]));
-  } else {
-    spawn?.spawnCreep(base.concat([ATTACK, TOUGH]));
-  }
-
-  for (let creep of myCreeps)
-    processCreep(creep, energySources);
+  console.log("Balance: " + global.balance);
 }
 
 function init(): void {
   firstLoop = false;
-  spawn = getObjectsByPrototype(StructureSpawn).find(s => s.my);
-  let roomPos = { x: spawn?.x, y: spawn?.y } as RoomPosition;
-  energySources = getObjectsByPrototype(StructureContainer);
-  energySources = energySources.concat(getObjectsByPrototype(Source));
-  energySources.sort((a, b) => calcEnergyScore(b, roomPos) - calcEnergyScore(a, roomPos));
-  console.log(energySources);
+  for (let spawn of getObjectsByPrototype(StructureSpawn).filter(s => s.my))
+    sLogic.push(new SpawnLogic(spawn));
+
+  cLogic.init();
+}
+
+function updateGlobals(): void {
+  global.threat = calcThreat();
+  global.power = calcPower();
+  global.balance = global.power - global.threat;
+  global.allCreeps = getObjectsByPrototype(Creep);
+  global.myCreeps = global.allCreeps.filter(c => c.my);
+  global.enemyCreeps = global.allCreeps.filter(c => !c.my);
 }
