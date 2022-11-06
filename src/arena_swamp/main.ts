@@ -1,5 +1,5 @@
 import { Creep, StructureSpawn } from "game/prototypes";
-import { getObjectsByPrototype } from "game/utils";
+import { getObjectsByPrototype, getTicks } from "game/utils";
 import { calcPower, calcThreat, clearCache } from "./calculation";
 import { Goal } from "./goals/goal";
 import { CreepLogic } from "./logic/creepLogic";
@@ -39,7 +39,8 @@ export function loop(): void {
   for (let spawn of sLogic)
     spawn.loop();
 
-  console.log("Balance: " + global.balance);
+  if (getTicks() % 50 == 0)
+    console.log("Balance: %f", global.balance);
 }
 
 function init(): void {

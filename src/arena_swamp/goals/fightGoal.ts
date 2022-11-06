@@ -34,18 +34,16 @@ export class FightGoal extends Goal {
     enemPos = this.creep.findInRange(enemPos, 5);
     if (enemPos.length == 0)
       enemPos.push({ x: this.target.x, y: this.target.y });
-    console.log("enempos len: " + enemPos.length);
     if (enemPos.length > 1) {
       let closest = this.creep.findClosestByPath(enemPos);
       if (closest == null)
         return;
       this.creep.moveTo(closest, { flee: true });
     } else {
-      if (this.target.getRangeTo(enemPos[0]) <= 2) {
+      if (this.creep.getRangeTo(enemPos[0]) <= 2) {
         this.creep.moveTo(this.target, { flee: true });
       } else {
         let result = this.creep.rangedAttack(this.target);
-        console.log("attack result: " + result);
         if (result == ERR_NOT_IN_RANGE)
           this.creep.moveTo(this.target);
       }

@@ -29,11 +29,13 @@ export class SpawnLogic implements Ticker {
       attakToHarv -= Math.min((winning - losing) / this.balHistory.length * 2, 3);
     }
 
+    attakToHarv = Math.min(0.4, Math.max(attakToHarv, 4));
+
     if (this.harvs.length * attakToHarv > this.attak.length) {
       if (Math.random() > .5) {
-        this.spawn.spawnCreep([ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE, MOVE, TOUGH]);
+        this.spawn.spawnCreep([TOUGH, MOVE, ATTACK, MOVE, MOVE, ATTACK, ATTACK, ATTACK, MOVE, ATTACK]);
       } else {
-        this.spawn.spawnCreep([RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, MOVE, MOVE, MOVE, MOVE, TOUGH]);
+        this.spawn.spawnCreep([TOUGH, MOVE, RANGED_ATTACK, MOVE, MOVE, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, MOVE, RANGED_ATTACK]);
       }
     } else {
       this.spawn.spawnCreep([MOVE, MOVE, CARRY, WORK]);
